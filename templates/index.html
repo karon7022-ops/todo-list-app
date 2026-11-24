@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}Your tasks{% endblock %}
+{% block content %}
+  <section class="intro">
+    <p class="eyebrow">YOUR DAY, YOUR PACE</p>
+    <h1>Small steps.<br><span>Real progress.</span></h1>
+    <p class="intro-copy">Keep your priorities close and celebrate every task you finish.</p>
+  </section>
+
+  <section class="task-composer panel" aria-labelledby="add-heading">
+    <div class="panel-heading">
+      <div>
+        <p class="eyebrow">NEW PRIORITY</p>
+        <h2 id="add-heading">What needs doing?</h2>
+      </div>
+      <span class="plus-icon" aria-hidden="true">+</span>
+    </div>
+    <form action="{{ url_for('add_task') }}" method="post" class="task-form">
+      <label class="sr-only" for="new-title">Task title</label>
+      <input id="new-title" name="title" type="text" maxlength="120" placeholder="e.g. Plan the week ahead" required>
+      <label class="sr-only" for="new-description">Description (optional)</label>
+      <textarea id="new-description" name="description" rows="2" maxlength="500" placeholder="Add a note (optional)"></textarea>
+      <div class="form-actions">
+        <label class="status-picker" for="new-status">
+          <span>Status</span>
+          <select id="new-status" name="status">
+            {% for status in task_statuses %}
+              <option value="{{ status }}">{{ status }}</option>
+            {% endfor %}
+          </select>
+        </label>
+        <button class="button button-primary" type="submit">Add task <span aria-hidden="true">→</span></button>
+      </div>
+    </form>
+  </section>
+
+  <section class="task-section" aria-labelledby="tasks-heading">
+    <div class="list-heading">
+      <div>
+        <p class="eyebrow">YOUR LIST</p>
+        <h2 id="tasks-heading">Tasks <span class="count">{{ total_count }}</span></h2>
+      </div>
+      <nav class="filters" aria-label="Filter tasks">
+        {% for key, label in [('all', 'All'), ('active', 'Active'), ('completed', 'Completed')] %}
+          <a class="filter-link {% if selected_filter == key %}selected{% endif %}"
+             href="{{ url_for('index', filter=key) }}"
+             {% if selected_filter == key %}aria-current="page"{% endif %}>{{ label }}{% if key == 'completed' %} <span>{{ completed_count }}</span>{% endif %}</a>
+        {% endfor %}
+      </nav>
+    </div>
+
+    {% if tasks %}
+      <ul class="task-list">
+        {% for task in tasks %}
+          <li class="task-card {% if task.status == 'Completed' %}is-complete{% endif %}">
+            <form action="{{ url_for('toggle_task', task_id=task.id) }}" method="post" class="completion-form">
+              <button class="check-button" type="submit" aria-label="{% if task.status == 'Completed' %}Mark {{ task.title }} incomplete{% else %}Mark {{ task.title }} complete{% endif %}">
+                {% if task.status == 'Completed' %}<span aria-hidden="true">✓</span>{% endif %}
+              </button>
+            </form>
+            <div class="task-content">
+              <h3>{{ task.title }}</h3>
+              {% if task.description %}<p class="task-description">{{ task.description }}</p>{% endif %}
+            </div>
+            <span class="status-badge status-{{ task.status|lower|replace(' ', '-') }}">{{ task.status }}</span>
+            <div class="task-actions">
+              <a class="icon-action" href="{{ url_for('edit_task', task_id=task.id) }}" aria-label="Edit {{ task.title }}" title="Edit">✎</a>
+              <form action="{{ url_for('delete_task', task_id=task.id) }}" method="post" onsubmit="return confirm('Delete this task?');">
+                <button class="icon-action delete-action" type="submit" aria-label="Delete {{ task.title }}" title="Delete">×</button>
+              </form>
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+    {% else %}
+      <div class="empty-state panel">
+        <div class="empty-illustration" aria-hidden="true">✦</div>
+        {% if selected_filter == 'completed' %}
+          <h3>No completed tasks yet</h3>
+          <p>Finish a task and it will find its way here.</p>
+        {% elif selected_filter == 'active' %}
+          <h3>All caught up</h3>
+          <p>There are no active tasks. Enjoy the breathing room.</p>
+        {% else %}
+          <h3>A fresh start</h3>
+          <p>Add your first task above and take it one step at a time.</p>
+        {% endif %}
+      </div>
+    {% endif %}
+  </section>
+{% endblock %}

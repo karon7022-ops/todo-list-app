@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>{% block title %}Todo List{% endblock %} · Todo List</title>
+  <script>
+    (function () {
+      var theme = "system";
+      try {
+        theme = localStorage.getItem("todo-list-theme") || "system";
+      } catch (_error) {}
+      var root = document.documentElement;
+      root.dataset.theme = ["light", "dim", "system"].includes(theme) ? theme : "system";
+      root.dataset.systemTheme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "dim" : "light";
+    })();
+  </script>
+  <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+  <script src="{{ url_for('static', filename='theme.js') }}" defer></script>
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="{{ url_for('index') }}"><span class="brand-mark">✓</span> Today List</a>
+    <span class="header-note">Make room for what matters.</span>
+    <label class="theme-control">
+      <span>Theme</span>
+      <select id="theme-select" aria-label="Color theme">
+        <option value="system">System</option>
+        <option value="light">Light</option>
+        <option value="dim">Dim</option>
+      </select>
+    </label>
+  </header>
+  <main class="page">
+    {% with messages = get_flashed_messages(with_categories=true) %}
+      {% if messages %}
+        <div class="flash-list" aria-live="polite">
+          {% for category, message in messages %}
+            <p class="flash {{ category }}">{{ message }}</p>
+          {% endfor %}
+        </div>
+      {% endif %}
+    {% endwith %}
+    {% block content %}{% endblock %}
+  </main>
+  <footer class="site-footer">A little progress adds up.</footer>
+</body>
+</html>
