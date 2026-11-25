@@ -11,14 +11,25 @@ FILTERS = ("all", "active", "completed")
 
 def create_app(test_config=None):
     app = Flask(__name__)
+    configured_secret = os.environ.get("SECRET_KEY")
+    if (
+        not configured_secret
+        and os.environ.get("WEBSITE_SITE_NAME")
+        and not (test_config and test_config.get("SECRET_KEY"))
+    ):
+        raise RuntimeError("Set the SECRET_KEY app setting before starting in Azure.")
+
     app.config.from_mapping(
-        SECRET_KEY=os.environ.get("SECRET_KEY", "change-this-secret-key"),
-        DATABASE=str(Path(app.instance_path) / "tasks.sqlite3"),
+        SECRET_KEY=configured_secret or "change-this-secret-key",
+        DATABASE=os.environ.get(
+            "DATABASE_PATH", str(Path(app.instance_path) / "tasks.sqlite3")
+        ),
     )
     if test_config:
         app.config.update(test_config)
 
     Path(app.instance_path).mkdir(parents=True, exist_ok=True)
+    Path(app.config["DATABASE"]).parent.mkdir(parents=True, exist_ok=True)
     initialize_database(app)
 
     @app.teardown_appcontext

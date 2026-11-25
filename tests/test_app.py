@@ -1,6 +1,7 @@
 import os
 import tempfile
 import unittest
+from unittest.mock import patch
 
 from app import create_app
 
@@ -82,6 +83,28 @@ class TodoListTests(unittest.TestCase):
 
     def test_rejects_unknown_filter(self):
         self.assertEqual(self.client.get("/?filter=archived").status_code, 400)
+
+    def test_azure_environment_uses_persistent_database_path(self):
+        database_path = os.path.join(self.temp_dir.name, "persistent", "tasks.sqlite3")
+        with patch.dict(
+            os.environ,
+            {
+                "WEBSITE_SITE_NAME": "todo-demo",
+                "SECRET_KEY": "azure-test-key",
+                "DATABASE_PATH": database_path,
+            },
+        ):
+            azure_app = create_app()
+
+        self.assertEqual(azure_app.config["DATABASE"], database_path)
+        self.assertTrue(os.path.isfile(database_path))
+
+    def test_azure_requires_configured_secret_key(self):
+        with patch.dict(
+            os.environ, {"WEBSITE_SITE_NAME": "todo-demo"}, clear=True
+        ):
+            with self.assertRaisesRegex(RuntimeError, "Set the SECRET_KEY"):
+                create_app({"DATABASE": self.database})
 
     def test_theme_menu_and_theme_script_are_available(self):
         response = self.client.get("/")
